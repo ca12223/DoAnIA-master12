@@ -1,71 +1,72 @@
-# version: '3.9'
+ version: '3.9'
 
-# services:
-#   storage_zone:
-#     build: .
-#     container_name: zone_storage
-#     command: ["python", "replayer_storage.py"]
-#     depends_on:
-#       - emqx
-#     environment:
-#       - BROKER=emqx
-#       - PORT=1883
-#     networks:
-#       iot-net:
-#         ipv4_address: 172.28.0.21
+ services:
+   storage_zone:
+     build: .
+     container_name: zone_storage
+     command: ["python", "replayer_storage.py"]
+     depends_on:
+       - emqx
+     environment:
+       - BROKER=emqx
+       - PORT=1883
+     networks:
+       iot-net:
+         ipv4_address: 172.28.0.21
 
-#   production_zone:
-#     build: .
-#     container_name: zone_production
-#     command: ["python", "replayer_production.py"]
-#     depends_on:
-#       - emqx
-#     environment:
-#       - BROKER=emqx
-#       - PORT=1883
-#     networks:
-#       iot-net:
-#         ipv4_address: 172.28.0.22
+   production_zone:
+     build: .
+     container_name: zone_production
+     command: ["python", "replayer_production.py"]
+     depends_on:
+       - emqx
+     environment:
+       - BROKER=emqx
+       - PORT=1883
+     networks:
+       iot-net:
+         ipv4_address: 172.28.0.22
 
-#   energy_zone:
-#     build: .
-#     container_name: zone_energy
-#     command: ["python", "replayer_energy.py"]
-#     depends_on:
-#       - emqx
-#     environment:
-#       - BROKER=emqx
-#       - PORT=1883
-#     networks:
-#       iot-net:
-#         ipv4_address: 172.28.0.23
+   energy_zone:
+     build: .
+     container_name: zone_energy
+     command: ["python", "replayer_energy.py"]
+     depends_on:
+       - emqx
+     environment:
+       - BROKER=emqx
+       - PORT=1883
+     networks:
+       iot-net:
+         ipv4_address: 172.28.0.23
 
-#   security_zone:
-#     build: .
-#     container_name: zone_security
-#     command: ["python", "replayer_security.py"]
-#     depends_on:
-#       - emqx
-#     environment:
-#       - BROKER=emqx
-#       - PORT=1883
-#     networks:
-#       iot-net:
-#         ipv4_address: 172.28.0.24
+   security_zone:
+     build: .
+     container_name: zone_security
+     command: ["python", "replayer_security.py"]
+     depends_on:
+       - emqx
+     environment:
+       - BROKER=emqx
+       - PORT=1883
+     networks:
+       iot-net:
+         ipv4_address: 172.28.0.24
 
-#   office_zone:
-#     build: .
-#     container_name: zone_office
-#     command: ["python", "replayer_office.py"]
-#     depends_on:
-#       - emqx
-#     environment:
-#       - BROKER=emqx
-#       - PORT=1883
-#     networks:
-#       iot-net:
-#         ipv4_address: 172.28.0.25
+   office_zone:
+     build: .
+     container_name: zone_office
+     command: ["python", "replayer_office.py"]
+     depends_on:
+       - emqx
+     environment:
+       - BROKER=emqx
+       - PORT=1883
+     networks:
+       iot-net:
+         ipv4_address: 172.28.0.25
 
-# networks:
-#   iot-net:
-#     external: true
+ networks:
+   iot-net:
+     external: true
+
