@@ -76,7 +76,16 @@ services:
       - HOST_SYS=/host/sys
     networks:
       - iot-net
-
+  office_zone:
+    build: .
+    container_name: zone_office
+    command: ["python", "replayer_office.py"]
+    environment:
+      - BROKER=emqx
+      - PORT=1883
+    networks:
+      iot-net:
+        ipv4_address: 172.28.0.25
 # ==========================================================
 # Persistent Volumes
 # ==========================================================
