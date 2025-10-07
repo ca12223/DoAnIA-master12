@@ -28,7 +28,7 @@ MSGTYP_CANDIDATES = ["mqtt.msgtype", "msg_type", "message_type", "packet_type", 
 # Zone & tenancy
 # -----------------------------------------------------------------------------
 TENANT = "office"
-ZONE = "production"
+ZONE = "office"
 
 # ----------------------------------------------------------------------------- 
 # Device set cho Production Floor
