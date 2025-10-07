@@ -1,0 +1,14 @@
+# === Core dependencies ===
+paho-mqtt>=1.6.1          # MQTT publishing
+pandas>=2.0.0              # CSV parsing, canonicalization, timing
+numpy>=1.26.0              # Required by pandas for numeric ops
+python-dateutil>=2.8.2     # Timestamp parsing helper for pandas
+pytz>=2024.1               # Timezone handling (UTC timestamps)
+
+# === Optional / Integration ===
+influxdb-client>=1.38.0    # For downstream testing or Grafana pipelines
+python-dotenv>=1.0.0       # For .env configuration files
+requests>=2.31.0           # For REST API testing or auxiliary data fetches
+
+# === Recommended environment ===
+# Python 3.9 or newer recommended
