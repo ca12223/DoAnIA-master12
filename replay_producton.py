@@ -28,7 +28,7 @@ MSGTYP_CANDIDATES = ["mqtt.msgtype", "msg_type", "message_type", "packet_type", 
 # ----------------------------------------------------------------------------- 
 # Zone & tenancy
 # -----------------------------------------------------------------------------
-TENANT = "tenantA"
+TENANT = "production"
 ZONE = "production"
 
 # ----------------------------------------------------------------------------- 
@@ -195,7 +195,7 @@ def random_value_for_device(username: str) -> float:
 def device_thread(device_name: str, csv_path: str, broker: str, port: int,
                   username: Optional[str], speed_factor: float, min_interval: float):
     topic = f"factory/{TENANT}/{device_name}/telemetry"
-    client_id = f"{ZONE}-{username or device_name}-replayer"
+    client_id = f"{ZONE}-{username}-replayer"
     client = mk_client(client_id, username)
 
     # connect with retry
@@ -254,7 +254,7 @@ def device_thread(device_name: str, csv_path: str, broker: str, port: int,
                 payload = {
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                     "value": random_value_for_device(username),
-                    "client_id": username,
+                    "client_id": client_id,
                     "zone": ZONE,
                 }
                 try:
