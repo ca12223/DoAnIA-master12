@@ -17,4 +17,4 @@ ENV INFLUXDB_ORG=iot-org
 ENV INFLUXDB_BUCKET=iot-data
 ENV PYTHONUNBUFFERED=1
 
-CMD ["python", "replay_storage.py", "--broker", "emqx", "--port", "1883"]
+CMD ["python", "replayer_office.py", "--broker", "emqx", "--port", "1883"]
