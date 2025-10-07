@@ -25,11 +25,32 @@ TENANT = "tenantA"
 ZONE = "office"
 
 DEVICES = [
-    ("Temperature", "TemperatureMQTTset.csv",     "sensor_temp"),
-    ("Humidity",    "HumidityMQTTset.csv",        "sensor_hum"),
-    ("Light",       "LightIntensityMQTTset.csv",  "sensor_light"),
-    ("DoorLock",    "DoorlockMQTTset.csv",        "sensor_door"),
-    ("Camera",      "MotionMQTTset.csv",          "sensor_motion"),  # dùng nhịp Motion cho IP camera events
+    ("Temperature", "TemperatureMQTTset.csv",     "sensor_temp1"),
+    ("Temperature", "TemperatureMQTTset.csv",     "sensor_temp2"),
+    ("Temperature", "TemperatureMQTTset.csv",     "sensor_temp3"),
+    ("Temperature", "TemperatureMQTTset.csv",     "sensor_temp4"),
+    ("Temperature", "TemperatureMQTTset.csv",     "sensor_temp5"),
+    ("Temperature", "TemperatureMQTTset.csv",     "sensor_temp6"),
+    ("Temperature", "TemperatureMQTTset.csv",     "sensor_temp7"),
+    ("Temperature", "TemperatureMQTTset.csv",     "sensor_temp8"),
+    ("Humidity",    "HumidityMQTTset.csv",        "sensor_hum1"),
+    ("Humidity",    "HumidityMQTTset.csv",        "sensor_hum2"),
+    ("Humidity",    "HumidityMQTTset.csv",        "sensor_hum3"),
+    ("Humidity",    "HumidityMQTTset.csv",        "sensor_hum4"),
+    ("Humidity",    "HumidityMQTTset.csv",        "sensor_hum5"),
+    ("Humidity",    "HumidityMQTTset.csv",        "sensor_hum6"),
+    ("Humidity",    "HumidityMQTTset.csv",        "sensor_hum7"),
+    ("Humidity",    "HumidityMQTTset.csv",        "sensor_hum8"),
+    ("Light", "LightIntensityMQTTset.csv", "sensor_light1"),
+    ("Light", "LightIntensityMQTTset.csv", "sensor_light2"),
+    ("Light", "LightIntensityMQTTset.csv", "sensor_light3"),
+    ("Light", "LightIntensityMQTTset.csv", "sensor_light4"),
+    ("Light", "LightIntensityMQTTset.csv", "sensor_light5"),
+    ("DoorLock",    "DoorlockMQTTset.csv",        "sensor_door1"),
+    ("DoorLock",    "DoorlockMQTTset.csv",        "sensor_door2"),
+    ("DoorLock",    "DoorlockMQTTset.csv",        "sensor_door3"),
+    ("DoorLock",    "DoorlockMQTTset.csv",        "sensor_door4"),
+    ("DoorLock",    "DoorlockMQTTset.csv",        "sensor_door5"),
 ]
 
 def resolve_column(df: pd.DataFrame, candidates: List[str]) -> Optional[str]:
