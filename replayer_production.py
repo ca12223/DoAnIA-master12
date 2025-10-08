@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""
-Hybrid Canonical CSV Replayer for PRODUCTION ZONE
--------------------------------------------------
-- Zone: PRODUCTION (~80 devices concept)
-- Giữ nguyên logic gốc: đọc CSV → timing → lọc publish → publish payload ngẫu nhiên
-- Thêm "zone": "production" vào JSON
+
 Usage:
   python mqtt_csv_replayer_production.py --indir datasets --broker emqx --port 1883
 """
@@ -312,3 +307,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
