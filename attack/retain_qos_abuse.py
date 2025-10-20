@@ -129,7 +129,7 @@ class RetainQoSAbuseAttack:
                     # Generate payload
                     payload = {
                         "attack_type": "retain_abuse",
-                        "client_id": worker_id,
+                        "worker_id": worker_id,
                         "message_id": i,
                         "timestamp": datetime.now(timezone.utc).isoformat(),
                         "retain_data": "R" * random.randint(100, 1000)
@@ -197,7 +197,7 @@ class RetainQoSAbuseAttack:
                     # Generate payload
                     payload = {
                         "attack_type": "qos_abuse",
-                        "client_id": worker_id,
+                        "worker_id": worker_id,
                         "message_id": i,
                         "timestamp": datetime.now(timezone.utc).isoformat(),
                         "qos_level": qos_level,
@@ -266,7 +266,7 @@ class RetainQoSAbuseAttack:
                     # Generate payload
                     payload = {
                         "attack_type": "mixed_abuse",
-                        "client_id": worker_id,
+                        "worker_id": worker_id,
                         "message_id": i,
                         "timestamp": datetime.now(timezone.utc).isoformat(),
                         "mixed_data": "M" * random.randint(100, 1000)
